@@ -1,0 +1,76 @@
+#implement sampling code and plotting
+
+def readDataFrameFromCloudant(database):
+    cloudantdata=spark.read.load(database, "org.apache.bahir.cloudant")
+
+    cloudantdata.createOrReplaceTempView("washing")
+    spark.sql("SELECT * from washing").show()
+    return cloudantdata
+
+#implement a function which returns a 10% sample of a given dataF.
+def getSample(df,spark):
+    data = df.sample(False,0.1)
+    n = data.count()
+    data = data.show(n)
+    return data
+
+#CREATE A HISTOGRAM AND BOXPLOT
+def getListForHistogramAndBoxPlot(df,spark):
+    temp = spark.sql("select temperature from washing where temperature is 
+
+not null")
+    temp = temp.rdd.map(lambda row: row.temperature).collect()
+    return temp
+
+#Create a run chart to return tuple ( temp and timestapstamp)
+
+def getListsForRunChart(df,spark):
+    data = spark.sql("select ts, temperature from washing where temperature 
+
+is not null order by ts asc")
+    data = data.rdd.sample(False,0.1)
+    #data = data.rdd.sample(False,0.1).map(lambda row : 
+
+(row.ts,row.temperature))
+    data_ts = data.map(lambda (ts,temperature): ts).collect()
+    data_temperature = data.map(lambda(ts,temperature): temperature).collect
+
+()
+    data = (data_ts, data_temperature)
+    return (data)
+
+#use cludant credentials to connetc to the database
+hostname = "26625a68-aa11-4697-b899-9aa706de8231-bluemix.cloudant.com"
+user = "26625a68-aa11-4697-b899-9aa706de8231-bluemix"
+pw = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+database = "washing"
+
+#open a spark session
+spark = SparkSession\
+    .builder\
+    .appName("Cloudant Spark SQL Example in Python using temp tables")\
+    .config("cloudant.host",hostname)\
+    .config("cloudant.username", user)\
+    .config("cloudant.password",pw)\
+    .getOrCreate()
+cloudantdata=readDataFrameFromCloudant(database)
+
+#display sample data
+getSample(cloudantdata,spark)
+
+#display list
+getListForHistogramAndBoxPlot(cloudantdata,spark)
+
+#plot matplot, pyplot
+%matplotlib inline
+import matplotlib.pyplot as plt
+plt.hist(getListForHistogramAndBoxPlot(cloudantdata,spark))
+plt.show()
+plt.boxplot(getListForHistogramAndBoxPlot(cloudantdata,spark))
+plt.show()
+lists = getListsForRunChart(cloudantdata,spark)
+plt.plot(lists[0],lists[1])
+plt.xlabel("time")
+plt.ylabel("temperature")
+plt.show()
+
