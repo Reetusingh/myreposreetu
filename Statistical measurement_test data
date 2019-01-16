@@ -1,0 +1,137 @@
+#Statistical measurement of the test data
+def readDataFrameFromCloudant(database):
+    cloudantdata=spark.read.load(database, "org.apache.bahir.cloudant")
+
+    cloudantdata.createOrReplaceTempView("washing")
+    spark.sql("SELECT * from washing").show()
+    return cloudantdata
+
+#select min temperature
+
+def minTemperature(df,spark):
+    return spark.sql("SELECT min(temperature) as mintemp from 
+
+washing").first().mintemp
+
+#mean temp
+def meanTemperature(df,spark):
+    return spark.sql("SELECT mean(temperature) as meantemp from 
+
+washing").first().meantemp
+
+#select max temp
+def meanTemperature(df,spark):
+    return spark.sql("SELECT mean(temperature) as meantemp from 
+
+washing").first().meantemp
+
+#select meanhardness
+def meanHardness(df,spark):
+    return spark.sql("SELECT mean(hardness) as meanhard from washing").first
+
+().meanhard
+
+#cal std temp
+def sdTemperature(df,spark):
+    return spark.sql("SELECT stddev(temperature) as sdtemp from 
+
+washing").first().sdtemp
+
+#cal std hardness
+def sdHardness(df,spark):
+    return spark.sql("SELECT stddev(hardness) as sdhard from washing").first
+
+().sdhard
+
+#cal skew temp
+def skewTemperature(df,spark):    
+    return spark.sql("""
+SELECT 
+    (
+        1/count(temperature)
+    ) *
+    SUM (
+        POWER(temperature-%s,3)/POWER(%s,3)
+    )
+
+as skewtemp from washing """ %(meanTemperature(df,spark),sdTemperature
+
+(df,spark))).first().skewtemp
+
+#cal kurtosis temp
+def kurtosisTemperature(df,spark):    
+    return spark.sql("""
+SELECT 
+    (
+        1/count(temperature)
+    ) *
+    SUM (
+        POWER(temperature-%s,4)/POWER(%s,4)
+    )
+
+as kurttemp from washing """ %(meanTemperature(df,spark),sdTemperature
+
+(df,spark))).first().kurttemp
+
+#cal corr temp
+def correlationTemperatureHardness(df,spark):
+     return spark.sql(""" 
+ SELECT 
+ (
+       1/(count(hardness)) 
+  ) *
+SUM (
+ (( temperature - %s ) * (hardness - %s) )
+ )*
+ (
+     1/(%s*%s)
+ )
+
+  as corr1 from washing """ % (meanTemperature(df,spark),meanHardness
+
+(df,spark),sdTemperature(df,spark),sdHardness(df,spark))).first().corr1
+
+#connect to the cludant database using credentials
+hostname = "26625a68-aa11-4697-b899-9aa706de8231-bluemix.cloudant.com"
+user = "26625a68-aa11-4697-b899-9aa706de8231-bluemix"
+pw = "b70bweld8521welc0609bce310e99b60fwel64c85def877dd63db187e7welae35e8575b95639"
+database = "washing"
+
+spark = SparkSession\
+    .builder\
+    .appName("Cloudant Spark SQL Example in Python using temp tables")\
+    .config("cloudant.host",hostname)\
+    .config("cloudant.username", user)\
+    .config("cloudant.password",pw)\
+    .getOrCreate()
+cloudantdata=readDataFrameFromCloudant(database)
+
+#fetch result for mintemp, meantemp, meanhardnessx, maxtemp, sd hardness, 
+
+skew temp, kurtosistemp, correlation temp&hardness.
+
+minTemperature(cloudantdata,spark)
+
+
+meanTemperature(cloudantdata,spark)
+
+
+meanHardness(cloudantdata,spark)
+
+
+maxTemperature(cloudantdata,spark)
+
+
+sdTemperature(cloudantdata,spark)
+
+
+sdHardness(cloudantdata,spark)
+
+
+skewTemperature(cloudantdata,spark)
+
+
+kurtosisTemperature(cloudantdata,spark)
+
+correlationTemperatureHardness(cloudantdata,spark
+
